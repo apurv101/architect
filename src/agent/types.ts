@@ -1,4 +1,4 @@
-import type { FloorPlan } from "../lib/types";
+import type { FloorPlan, CostEstimate, ElevationView, StylePalette } from "../lib/types";
 import type { ProviderId } from "./providers/types";
 
 /**
@@ -6,7 +6,11 @@ import type { ProviderId } from "./providers/types";
  * The `kind` discriminator lets the UI know what to render.
  * Add new variants here as new skills are created.
  */
-export type Artifact = { kind: "floor_plan"; data: FloorPlan };
+export type Artifact =
+  | { kind: "floor_plan"; data: FloorPlan }
+  | { kind: "cost_estimate"; data: CostEstimate }
+  | { kind: "elevation_view"; data: ElevationView }
+  | { kind: "style_palette"; data: StylePalette };
 
 /** What a tool handler returns after execution. */
 export interface ToolHandlerResult {

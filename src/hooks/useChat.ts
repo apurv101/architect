@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import type { ChatMessage, FloorPlan } from "../lib/types";
+import type { ChatMessage, FloorPlan, ElevationView, ImageAttachment } from "../lib/types";
 import type { Artifact } from "../agent/types";
 import type { ProviderId } from "../agent/providers";
 import { runAgent } from "../agent/agent";
@@ -11,6 +11,7 @@ export function useChat(apiKey: string, provider: ProviderId) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
+  const [elevationView, setElevationView] = useState<ElevationView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Opaque provider-native message history.
@@ -24,11 +25,16 @@ export function useChat(apiKey: string, provider: ProviderId) {
   }
 
   const sendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || !apiKey) return;
+    async (text: string, images?: ImageAttachment[]) => {
+      if ((!text.trim() && (!images || images.length === 0)) || !apiKey) return;
 
       setError(null);
-      const userMsg: ChatMessage = { id: nextId(), role: "user", content: text };
+      const userMsg: ChatMessage = {
+        id: nextId(),
+        role: "user",
+        content: text,
+        images: images && images.length > 0 ? images : undefined,
+      };
       setMessages((prev) => [...prev, userMsg]);
       setLoading(true);
 
@@ -39,7 +45,8 @@ export function useChat(apiKey: string, provider: ProviderId) {
         const result = await runAgent(
           { apiKey, provider },
           apiMessages.current,
-          text
+          text,
+          images
         );
 
         // Extract the latest floor plan artifact
@@ -52,6 +59,18 @@ export function useChat(apiKey: string, provider: ProviderId) {
 
         if (floorPlanArtifact) {
           setFloorPlan(floorPlanArtifact.data);
+        }
+
+        // Extract elevation view artifact
+        const elevationArtifact = [...result.artifacts]
+          .reverse()
+          .find(
+            (a): a is Extract<Artifact, { kind: "elevation_view" }> =>
+              a.kind === "elevation_view"
+          );
+
+        if (elevationArtifact) {
+          setElevationView(elevationArtifact.data);
         }
 
         const assistantMsg: ChatMessage = {
@@ -79,5 +98,5 @@ export function useChat(apiKey: string, provider: ProviderId) {
     [apiKey, provider]
   );
 
-  return { messages, loading, floorPlan, error, sendMessage };
+  return { messages, loading, floorPlan, elevationView, error, sendMessage };
 }

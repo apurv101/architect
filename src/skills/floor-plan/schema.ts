@@ -49,11 +49,43 @@ export const FLOOR_PLAN_SCHEMA = {
             type: "string" as const,
             enum: ["horizontal", "vertical"],
           },
+          swingDirection: {
+            type: "string" as const,
+            enum: ["inward", "outward"],
+            description:
+              "Direction the door swings. 'inward' swings into the fromRoom, 'outward' into the toRoom. Default: inward for most doors, outward for bathrooms.",
+          },
         },
         required: ["id", "fromRoomId", "toRoomId", "x", "y", "width", "orientation"],
       },
     },
+    windows: {
+      type: "array" as const,
+      items: {
+        type: "object" as const,
+        properties: {
+          id: { type: "string" as const },
+          roomId: {
+            type: "string" as const,
+            description: "The room this window belongs to",
+          },
+          x: { type: "number" as const, minimum: 0 },
+          y: { type: "number" as const, minimum: 0 },
+          width: {
+            type: "number" as const,
+            minimum: 2,
+            maximum: 8,
+            description: "Window width along the wall in feet",
+          },
+          orientation: {
+            type: "string" as const,
+            enum: ["horizontal", "vertical"],
+          },
+        },
+        required: ["id", "roomId", "x", "y", "width", "orientation"],
+      },
+    },
     notes: { type: "string" as const },
   },
-  required: ["plot", "rooms", "doors", "notes"],
+  required: ["plot", "rooms", "doors", "windows", "notes"],
 };

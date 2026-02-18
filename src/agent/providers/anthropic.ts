@@ -22,7 +22,24 @@ export const anthropicAdapter: ProviderAdapter = {
     const tools = toAnthropicTools(config.tools);
     const messages = config.messages as Anthropic.MessageParam[];
 
-    messages.push({ role: "user", content: config.userMessage });
+    if (config.images && config.images.length > 0) {
+      const contentBlocks: Anthropic.ContentBlockParam[] = config.images.map(
+        (img) => ({
+          type: "image" as const,
+          source: {
+            type: "base64" as const,
+            media_type: img.mediaType,
+            data: img.data,
+          },
+        })
+      );
+      if (config.userMessage.trim()) {
+        contentBlocks.push({ type: "text" as const, text: config.userMessage });
+      }
+      messages.push({ role: "user", content: contentBlocks });
+    } else {
+      messages.push({ role: "user", content: config.userMessage });
+    }
 
     let finalText = "";
 

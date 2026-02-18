@@ -127,6 +127,65 @@ function validateFloorPlan(fp: FloorPlan): ValidationError[] {
     }
   }
 
+  // 6. Window validation
+  for (const win of fp.windows ?? []) {
+    const room = fp.rooms.find((r) => r.id === win.roomId);
+    if (!room) {
+      errors.push({
+        severity: "error",
+        message: `Window "${win.id}" references unknown roomId "${win.roomId}".`,
+      });
+      continue;
+    }
+
+    // Check window is on an exterior wall of the room
+    if (win.orientation === "horizontal") {
+      const onRoomTop = win.y === room.y;
+      const onRoomBottom = win.y === room.y + room.height;
+      const onPlotBoundary = win.y === 0 || win.y === fp.plot.height;
+      if (!(onRoomTop || onRoomBottom)) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" y=${win.y} is not on a horizontal edge of room "${room.name}".`,
+        });
+      } else if (!onPlotBoundary) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" is on an interior wall, not an exterior wall (y=${win.y}).`,
+        });
+      }
+      // Check window range within room width
+      if (win.x < room.x || win.x + win.width > room.x + room.width) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" extends outside room "${room.name}" along the wall.`,
+        });
+      }
+    } else {
+      const onRoomLeft = win.x === room.x;
+      const onRoomRight = win.x === room.x + room.width;
+      const onPlotBoundary = win.x === 0 || win.x === fp.plot.width;
+      if (!(onRoomLeft || onRoomRight)) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" x=${win.x} is not on a vertical edge of room "${room.name}".`,
+        });
+      } else if (!onPlotBoundary) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" is on an interior wall, not an exterior wall (x=${win.x}).`,
+        });
+      }
+      // Check window range within room height
+      if (win.y < room.y || win.y + win.width > room.y + room.height) {
+        errors.push({
+          severity: "warning",
+          message: `Window "${win.id}" extends outside room "${room.name}" along the wall.`,
+        });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -217,7 +276,7 @@ export const floorPlanSkill: Skill = {
           : "";
 
       return {
-        content: `Floor plan generated successfully with ${floorPlan.rooms.length} rooms and ${floorPlan.doors.length} doors.${warningNote}`,
+        content: `Floor plan generated successfully with ${floorPlan.rooms.length} rooms, ${floorPlan.doors.length} doors, and ${(floorPlan.windows ?? []).length} windows.${warningNote}`,
         artifact: {
           kind: "floor_plan",
           data: floorPlan,

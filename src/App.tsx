@@ -19,7 +19,12 @@ export default function App() {
     () => localStorage.getItem(providerConfig.storageKey) || ""
   );
 
-  const { messages, loading, floorPlan, sendMessage } = useChat(apiKey, provider);
+  // Fall back to env-provided Claude key when user hasn't entered one
+  const defaultAnthropicKey = import.meta.env.VITE_DEFAULT_ANTHROPIC_API_KEY || "";
+  const effectiveApiKey =
+    apiKey || (provider === "anthropic" ? defaultAnthropicKey : "");
+
+  const { messages, loading, floorPlan, elevationView, sendMessage } = useChat(effectiveApiKey, provider);
 
   // Persist provider selection
   useEffect(() => {
@@ -68,13 +73,13 @@ export default function App() {
             messages={messages}
             loading={loading}
             onSend={sendMessage}
-            disabled={!apiKey}
+            disabled={!effectiveApiKey}
           />
         </div>
 
         {/* Floor plan panel */}
         <div className="flex-1 h-1/2 md:h-full">
-          <FloorPlanPanel floorPlan={floorPlan} loading={loading} />
+          <FloorPlanPanel floorPlan={floorPlan} elevationView={elevationView} loading={loading} />
         </div>
       </div>
     </div>

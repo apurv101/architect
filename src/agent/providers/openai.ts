@@ -33,7 +33,20 @@ export const openaiAdapter: ProviderAdapter = {
       messages.unshift({ role: "system", content: config.systemPrompt });
     }
 
-    messages.push({ role: "user", content: config.userMessage });
+    if (config.images && config.images.length > 0) {
+      const contentParts: OpenAI.ChatCompletionContentPart[] = config.images.map(
+        (img) => ({
+          type: "image_url" as const,
+          image_url: { url: `data:${img.mediaType};base64,${img.data}` },
+        })
+      );
+      if (config.userMessage.trim()) {
+        contentParts.push({ type: "text" as const, text: config.userMessage });
+      }
+      messages.push({ role: "user", content: contentParts });
+    } else {
+      messages.push({ role: "user", content: config.userMessage });
+    }
 
     let finalText = "";
 

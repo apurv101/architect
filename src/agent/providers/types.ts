@@ -22,6 +22,7 @@ export interface ProviderAdapter {
     tools: CanonicalTool[];
     messages: unknown[];
     userMessage: string;
+    images?: import("../../lib/types").ImageAttachment[];
     toolHandler: ToolDispatcher;
   }): Promise<{ text: string }>;
 }

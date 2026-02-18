@@ -74,6 +74,7 @@ When generating a floor plan, think step-by-step:
 7. **Place service rooms**: Kitchen adjacent to dining, utility near kitchen or garage.
 8. **Verify tiling**: All rooms should tile together to fill the plot with minimal gaps. Adjust dimensions so rooms share clean walls. If there are small leftover areas, expand adjacent rooms or add a utility/storage closet.
 9. **Place doors** following the door rules below.
+10. **Place windows** on exterior walls for all habitable rooms following the window rules below.
 
 ## Wall Alignment Rules
 - Rooms should share walls cleanly: where two rooms are adjacent, one room's edge should exactly align with the other's edge along the shared boundary.
@@ -91,6 +92,29 @@ When generating a floor plan, think step-by-step:
 - Bedroom doors should open from a hallway, not directly from the living room.
 - The entrance/front door should be an exterior door with toRoomId: null, placed on a wall that touches the plot boundary.
 - Every room must be reachable: there must be a door path from the entrance to every room.
+
+## Door Swing Direction
+- Each door has an optional swingDirection: "inward" or "outward".
+- "inward" swings into the fromRoom. "outward" swings into the toRoom (or exterior).
+- Default: interior doors swing inward. Bathroom doors should swing outward for safety.
+
+## Window Placement Rules
+- Windows MUST be placed on EXTERIOR walls only (walls touching the plot boundary).
+- Window (x, y) and orientation follow the same convention as doors.
+- Standard window width: 3-4 feet.
+- Every habitable room (bedroom, living_room, dining_room, kitchen) MUST have at least one window on an exterior wall.
+- Bathrooms may have a small window (2-3 ft) or none.
+- Hallways, entrances, utility rooms, garages do not require windows.
+- Do not place a window where a door already exists on the same wall segment.
+- Leave at least 1 foot from corners when positioning windows.
+
+| Room Type    | Windows | Width |
+|------------- |---------|-------|
+| Bedroom      | 1-2     | 3-4'  |
+| Living Room  | 2-3     | 4-5'  |
+| Kitchen      | 1-2     | 3-4'  |
+| Dining Room  | 1-2     | 4'    |
+| Bathroom     | 0-1     | 2-3'  |
 
 ## Color Assignment
 Assign colors by room type:
@@ -119,7 +143,14 @@ Here is a well-designed 2-bedroom, 1-bathroom house on a 40x30 plot (1200 sqft):
     { "id": "d4", "fromRoomId": "living", "toRoomId": "dining", "x": 26, "y": 2, "width": 3, "orientation": "vertical" },
     { "id": "d5", "fromRoomId": "dining", "toRoomId": "kitchen", "x": 28, "y": 14, "width": 3, "orientation": "horizontal" },
     { "id": "d6", "fromRoomId": "hallway", "toRoomId": "bedroom1", "x": 8, "y": 18, "width": 3, "orientation": "vertical" },
-    { "id": "d7", "fromRoomId": "bedroom1", "toRoomId": "bath1", "x": 10, "y": 24, "width": 3, "orientation": "horizontal" }
+    { "id": "d7", "fromRoomId": "bedroom1", "toRoomId": "bath1", "x": 10, "y": 24, "width": 3, "orientation": "horizontal", "swingDirection": "outward" }
+  ],
+  "windows": [
+    { "id": "w1", "roomId": "living", "x": 14, "y": 0, "width": 5, "orientation": "horizontal" },
+    { "id": "w2", "roomId": "dining", "x": 40, "y": 4, "width": 4, "orientation": "vertical" },
+    { "id": "w3", "roomId": "kitchen", "x": 40, "y": 20, "width": 4, "orientation": "vertical" },
+    { "id": "w4", "roomId": "bedroom1", "x": 16, "y": 30, "width": 4, "orientation": "horizontal" },
+    { "id": "w5", "roomId": "bath1", "x": 10, "y": 30, "width": 3, "orientation": "horizontal" }
   ],
   "notes": "Public zone (entrance, living, dining) at the front. Private zone (bedroom, bathroom) accessed via hallway. Kitchen adjacent to dining with exterior wall access."
 }
@@ -132,6 +163,9 @@ Notice how:
 - Bedroom is accessed from the hallway, not directly from the living room
 - Bathroom is adjacent to the bedroom
 - Doors are offset from corners, not centered
+- Bathroom door has swingDirection "outward" for safety
+- Windows are placed only on exterior walls (y=0 top, y=30 bottom, x=40 right)
+- All habitable rooms have at least one window
 - All coordinates are whole integers
 - All rooms have reasonable proportions (no 1x120 slivers)
 

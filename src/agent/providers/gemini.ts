@@ -25,10 +25,20 @@ export const geminiAdapter: ProviderAdapter = {
     const maxToolRounds = config.maxToolRounds ?? 10;
     const messages = config.messages as Content[];
 
-    messages.push({
-      role: "user",
-      parts: [{ text: config.userMessage }],
-    });
+    if (config.images && config.images.length > 0) {
+      const parts: Part[] = config.images.map((img) => ({
+        inlineData: { mimeType: img.mediaType, data: img.data },
+      }));
+      if (config.userMessage.trim()) {
+        parts.push({ text: config.userMessage });
+      }
+      messages.push({ role: "user", parts });
+    } else {
+      messages.push({
+        role: "user",
+        parts: [{ text: config.userMessage }],
+      });
+    }
 
     let finalText = "";
 
