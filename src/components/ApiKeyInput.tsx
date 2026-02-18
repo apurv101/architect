@@ -3,9 +3,10 @@ import { useState } from "react";
 interface Props {
   apiKey: string;
   onApiKeyChange: (key: string) => void;
+  placeholder?: string;
 }
 
-export default function ApiKeyInput({ apiKey, onApiKeyChange }: Props) {
+export default function ApiKeyInput({ apiKey, onApiKeyChange, placeholder = "API key..." }: Props) {
   const [show, setShow] = useState(false);
 
   return (
@@ -15,7 +16,7 @@ export default function ApiKeyInput({ apiKey, onApiKeyChange }: Props) {
         type={show ? "text" : "password"}
         value={apiKey}
         onChange={(e) => onApiKeyChange(e.target.value)}
-        placeholder="sk-ant-..."
+        placeholder={placeholder}
         className="w-48 px-2.5 py-1.5 text-xs border border-gray-600 bg-gray-800 text-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 placeholder:text-gray-600"
       />
       <button

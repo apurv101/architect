@@ -1,5 +1,5 @@
 import type { Skill } from "./types";
-import type Anthropic from "@anthropic-ai/sdk";
+import type { CanonicalTool } from "../agent/providers/types";
 import type { ToolHandler } from "../agent/types";
 
 class SkillRegistry {
@@ -23,9 +23,9 @@ class SkillRegistry {
     this.skills.set(skill.name, skill);
   }
 
-  /** Get all tool definitions to pass to the Claude API. */
-  getAllTools(): Anthropic.Tool[] {
-    const tools: Anthropic.Tool[] = [];
+  /** Get all tool definitions (provider-agnostic). */
+  getAllTools(): CanonicalTool[] {
+    const tools: CanonicalTool[] = [];
     for (const skill of this.skills.values()) {
       tools.push(...skill.tools);
     }

@@ -1,5 +1,5 @@
-import type Anthropic from "@anthropic-ai/sdk";
 import type { FloorPlan } from "../lib/types";
+import type { ProviderId } from "./providers/types";
 
 /**
  * An artifact produced by a tool execution.
@@ -10,7 +10,7 @@ export type Artifact = { kind: "floor_plan"; data: FloorPlan };
 
 /** What a tool handler returns after execution. */
 export interface ToolHandlerResult {
-  /** Text content sent back as tool_result to Claude */
+  /** Text content sent back as tool_result to the model */
   content: string;
   /** Optional artifact produced (e.g., a floor plan) */
   artifact?: Artifact;
@@ -23,17 +23,18 @@ export type ToolHandler = (input: unknown) => Promise<ToolHandlerResult>;
 
 /** What the agent returns to the caller after the agentic loop completes. */
 export interface AgentResult {
-  /** The final text response from Claude */
+  /** The final text response from the model */
   text: string;
   /** All artifacts produced during the turn */
   artifacts: Artifact[];
-  /** The full updated conversation history (including tool_use/tool_result pairs) */
-  messages: Anthropic.MessageParam[];
+  /** The full updated conversation history (provider-native format) */
+  messages: unknown[];
 }
 
 /** Configuration for an agent run. */
 export interface AgentConfig {
   apiKey: string;
+  provider: ProviderId;
   model?: string;
   maxTokens?: number;
   /** Safety cap on tool dispatch rounds (default 10) */

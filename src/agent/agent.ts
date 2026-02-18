@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { AgentConfig, AgentResult, Artifact } from "./types";
 import { registry } from "../skills";
+import { ADAPTERS } from "./providers";
 
 const BASE_SYSTEM_PROMPT = `You are an expert architectural design assistant. You help users design buildings, floor plans, and spaces.
 
@@ -12,110 +12,50 @@ When you have completed the user's request, respond with a brief natural languag
 
 If the user's request is ambiguous, ask clarifying questions rather than guessing.`;
 
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
-const DEFAULT_MAX_TOKENS = 8192;
-const DEFAULT_MAX_TOOL_ROUNDS = 10;
-
 /**
  * Run the agent loop for one user turn.
  *
- * Calls Claude, dispatches any tool_use blocks to skill handlers,
- * feeds results back, and loops until Claude stops calling tools.
+ * Delegates to the selected provider adapter which handles
+ * API calls, tool dispatch, and message history in its native format.
  */
 export async function runAgent(
   config: AgentConfig,
-  messages: Anthropic.MessageParam[],
+  messages: unknown[],
   userMessage: string
 ): Promise<AgentResult> {
-  const client = new Anthropic({
-    apiKey: config.apiKey,
-    dangerouslyAllowBrowser: true,
-  });
-
-  const model = config.model ?? DEFAULT_MODEL;
-  const maxTokens = config.maxTokens ?? DEFAULT_MAX_TOKENS;
-  const maxToolRounds = config.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS;
-
+  const adapter = ADAPTERS[config.provider];
   const tools = registry.getAllTools();
   const systemPrompt = registry.buildSystemPrompt(BASE_SYSTEM_PROMPT);
 
-  messages.push({ role: "user", content: userMessage });
-
   const artifacts: Artifact[] = [];
-  let finalText = "";
 
-  for (let round = 0; round < maxToolRounds; round++) {
-    const response = await client.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages,
-      tools,
-    });
-
-    messages.push({ role: "assistant", content: response.content });
-
-    // Extract text blocks from this response
-    for (const block of response.content) {
-      if (block.type === "text") {
-        finalText += block.text;
-      }
+  const toolHandler = async (name: string, input: unknown) => {
+    const handler = registry.getHandler(name);
+    if (!handler) {
+      return { content: `Error: Unknown tool "${name}"`, isError: true };
     }
-
-    // If Claude didn't call any tools, we're done
-    if (response.stop_reason !== "tool_use") {
-      break;
+    try {
+      const result = await handler(input);
+      if (result.artifact) artifacts.push(result.artifact);
+      return { content: result.content, isError: result.isError };
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Tool execution failed";
+      return { content: `Error: ${msg}`, isError: true };
     }
-
-    // Dispatch all tool calls and collect results
-    const toolResultBlocks: Anthropic.ToolResultBlockParam[] = [];
-
-    for (const block of response.content) {
-      if (block.type !== "tool_use") continue;
-
-      const handler = registry.getHandler(block.name);
-      if (!handler) {
-        toolResultBlocks.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: `Error: Unknown tool "${block.name}"`,
-          is_error: true,
-        });
-        continue;
-      }
-
-      try {
-        const result = await handler(block.input);
-
-        toolResultBlocks.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: result.content,
-          is_error: result.isError ?? false,
-        });
-
-        if (result.artifact) {
-          artifacts.push(result.artifact);
-        }
-      } catch (err) {
-        const errorMsg =
-          err instanceof Error ? err.message : "Tool execution failed";
-        toolResultBlocks.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: `Error: ${errorMsg}`,
-          is_error: true,
-        });
-      }
-    }
-
-    // Feed tool results back to Claude
-    messages.push({ role: "user", content: toolResultBlocks });
-  }
-
-  return {
-    text: finalText || "I've completed the request.",
-    artifacts,
-    messages,
   };
+
+  const { text } = await adapter.runAgentLoop({
+    apiKey: config.apiKey,
+    model: config.model,
+    maxTokens: config.maxTokens,
+    maxToolRounds: config.maxToolRounds ?? 10,
+    systemPrompt,
+    tools,
+    messages,
+    userMessage,
+    toolHandler,
+  });
+
+  return { text, artifacts, messages };
 }

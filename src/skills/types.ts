@@ -1,4 +1,4 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { CanonicalTool } from "../agent/providers/types";
 import type { ToolHandler } from "../agent/types";
 
 /**
@@ -11,8 +11,8 @@ export interface Skill {
   name: string;
   /** Human-readable description */
   description: string;
-  /** Tool definitions to pass to the Claude API */
-  tools: Anthropic.Tool[];
+  /** Provider-agnostic tool definitions */
+  tools: CanonicalTool[];
   /** Map of tool_name → handler function */
   handlers: Record<string, ToolHandler>;
   /** Optional text appended to the system prompt when this skill is active */

@@ -1,21 +1,27 @@
 import { useState, useCallback, useRef } from "react";
-import type Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage, FloorPlan } from "../lib/types";
 import type { Artifact } from "../agent/types";
+import type { ProviderId } from "../agent/providers";
 import { runAgent } from "../agent/agent";
 
 let messageId = 0;
 const nextId = () => `msg-${++messageId}`;
 
-export function useChat(apiKey: string) {
+export function useChat(apiKey: string, provider: ProviderId) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [floorPlan, setFloorPlan] = useState<FloorPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Full API conversation history (includes tool_use/tool_result blocks).
-  // Separate from display messages because these blocks don't render in the chat UI.
-  const apiMessages = useRef<Anthropic.MessageParam[]>([]);
+  // Opaque provider-native message history.
+  const apiMessages = useRef<unknown[]>([]);
+
+  // Reset API history when provider changes (formats are incompatible).
+  const currentProvider = useRef<ProviderId>(provider);
+  if (currentProvider.current !== provider) {
+    currentProvider.current = provider;
+    apiMessages.current = [];
+  }
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -30,7 +36,11 @@ export function useChat(apiKey: string) {
       const snapshot = [...apiMessages.current];
 
       try {
-        const result = await runAgent({ apiKey }, apiMessages.current, text);
+        const result = await runAgent(
+          { apiKey, provider },
+          apiMessages.current,
+          text
+        );
 
         // Extract the latest floor plan artifact
         const floorPlanArtifact = [...result.artifacts]
@@ -66,7 +76,7 @@ export function useChat(apiKey: string) {
         setLoading(false);
       }
     },
-    [apiKey]
+    [apiKey, provider]
   );
 
   return { messages, loading, floorPlan, error, sendMessage };
