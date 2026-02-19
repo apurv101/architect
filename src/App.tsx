@@ -24,7 +24,7 @@ export default function App() {
   const effectiveApiKey =
     apiKey || (provider === "anthropic" ? defaultAnthropicKey : "");
 
-  const { messages, loading, floorPlan, elevationView, sendMessage } = useChat(effectiveApiKey, provider);
+  const { messages, loading, floorPlan, roomPlan, siteAnalysis, blockingLayout, sendMessage } = useChat(effectiveApiKey, provider);
 
   // Persist provider selection
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function App() {
 
         {/* Floor plan panel */}
         <div className="flex-1 h-1/2 md:h-full">
-          <FloorPlanPanel floorPlan={floorPlan} elevationView={elevationView} loading={loading} />
+          <FloorPlanPanel floorPlan={floorPlan} roomPlan={roomPlan} siteAnalysis={siteAnalysis} blockingLayout={blockingLayout} loading={loading} />
         </div>
       </div>
     </div>

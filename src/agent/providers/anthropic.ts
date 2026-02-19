@@ -42,6 +42,7 @@ export const anthropicAdapter: ProviderAdapter = {
     }
 
     let finalText = "";
+    let roundsExhausted = false;
 
     for (let round = 0; round < maxToolRounds; round++) {
       const response = await client.messages.create({
@@ -75,8 +76,12 @@ export const anthropicAdapter: ProviderAdapter = {
       }
 
       messages.push({ role: "user", content: toolResults });
+
+      if (round === maxToolRounds - 1) {
+        roundsExhausted = true;
+      }
     }
 
-    return { text: finalText || "I've completed the request." };
+    return { text: finalText || "I've completed the request.", roundsExhausted };
   },
 };

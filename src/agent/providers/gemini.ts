@@ -41,6 +41,7 @@ export const geminiAdapter: ProviderAdapter = {
     }
 
     let finalText = "";
+    let roundsExhausted = false;
 
     for (let round = 0; round < maxToolRounds; round++) {
       const result = await model.generateContent({ contents: messages });
@@ -87,8 +88,12 @@ export const geminiAdapter: ProviderAdapter = {
         role: "user",
         parts: responseParts,
       });
+
+      if (round === maxToolRounds - 1) {
+        roundsExhausted = true;
+      }
     }
 
-    return { text: finalText || "I've completed the request." };
+    return { text: finalText || "I've completed the request.", roundsExhausted };
   },
 };

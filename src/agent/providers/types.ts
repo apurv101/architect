@@ -24,7 +24,7 @@ export interface ProviderAdapter {
     userMessage: string;
     images?: import("../../lib/types").ImageAttachment[];
     toolHandler: ToolDispatcher;
-  }): Promise<{ text: string }>;
+  }): Promise<{ text: string; roundsExhausted?: boolean }>;
 }
 
 export type ProviderId = "anthropic" | "openai" | "gemini";

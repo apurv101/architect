@@ -1,64 +1,45 @@
-import type { FloorPlan, ElevationView } from "../lib/types";
+import type { FloorPlan, RoomPlan, SiteAnalysis, BlockingLayout } from "../lib/types";
 import FloorPlanSVG from "./FloorPlanSVG";
-import ElevationViewSVG from "./ElevationViewSVG";
+import RoomPlanView from "./RoomPlanView";
+import SiteAnalysisView from "./SiteAnalysisView";
+import BlockingLayoutView from "./BlockingLayoutView";
 import { useState } from "react";
 
 interface Props {
   floorPlan: FloorPlan | null;
-  elevationView: ElevationView | null;
+  roomPlan: RoomPlan | null;
+  siteAnalysis: SiteAnalysis | null;
+  blockingLayout: BlockingLayout | null;
   loading: boolean;
 }
 
-type ViewMode = "floor_plan" | "elevation";
-
-export default function FloorPlanPanel({ floorPlan, elevationView, loading }: Props) {
+export default function FloorPlanPanel({ floorPlan, roomPlan, siteAnalysis, blockingLayout, loading }: Props) {
   const [zoom, setZoom] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>("floor_plan");
 
   const handleDownload = () => {
-    const svgId = viewMode === "elevation" ? "elevation-view-svg" : "floor-plan-svg";
-    const svg = document.getElementById(svgId);
+    const svg = document.getElementById("floor-plan-svg");
     if (!svg) return;
     const data = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([data], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = viewMode === "elevation" ? "elevation-view.svg" : "floor-plan.svg";
+    a.download = "floor-plan.svg";
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const hasContent = floorPlan || elevationView;
+  const hasContent = floorPlan || blockingLayout || siteAnalysis || roomPlan;
+
+  // Determine loading text based on current stage
+  const loadingText = floorPlan ? "Updating..." :
+    blockingLayout ? "Adding doors & windows..." :
+    siteAnalysis ? "Placing rooms..." :
+    roomPlan ? "Analyzing site..." :
+    "Generating floor plan...";
 
   return (
     <div className="flex flex-col h-full">
-      {/* View toggle (only if both views available) */}
-      {floorPlan && elevationView && (
-        <div className="flex gap-1 p-2 border-b border-gray-200 bg-white">
-          <button
-            onClick={() => setViewMode("floor_plan")}
-            className={`px-3 py-1 text-xs rounded transition-colors ${
-              viewMode === "floor_plan"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-            }`}
-          >
-            Floor Plan
-          </button>
-          <button
-            onClick={() => setViewMode("elevation")}
-            className={`px-3 py-1 text-xs rounded transition-colors ${
-              viewMode === "elevation"
-                ? "bg-gray-800 text-white"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-            }`}
-          >
-            Elevation View
-          </button>
-        </div>
-      )}
-
       <div className="flex-1 overflow-auto flex items-center justify-center bg-gray-50 p-4">
         {loading && !hasContent && (
           <div className="text-gray-400 animate-pulse text-lg">Generating floor plan...</div>
@@ -70,23 +51,49 @@ export default function FloorPlanPanel({ floorPlan, elevationView, loading }: Pr
             <p className="text-sm mt-1">Describe a floor plan in the chat to get started</p>
           </div>
         )}
-        {hasContent && (
+        {floorPlan && (
           <div className="relative">
             {loading && (
               <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
-                <span className="text-gray-500 animate-pulse">Updating...</span>
+                <span className="text-gray-500 animate-pulse">{loadingText}</span>
               </div>
             )}
-            {viewMode === "elevation" && elevationView ? (
-              <ElevationViewSVG elevation={elevationView} zoom={zoom} />
-            ) : floorPlan ? (
-              <FloorPlanSVG floorPlan={floorPlan} zoom={zoom} />
-            ) : null}
+            <FloorPlanSVG floorPlan={floorPlan} zoom={zoom} />
+          </div>
+        )}
+        {!floorPlan && blockingLayout && (
+          <div className="relative w-full flex items-center justify-center">
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
+                <span className="text-gray-500 animate-pulse">{loadingText}</span>
+              </div>
+            )}
+            <BlockingLayoutView blockingLayout={blockingLayout} />
+          </div>
+        )}
+        {!floorPlan && !blockingLayout && siteAnalysis && (
+          <div className="relative w-full">
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
+                <span className="text-gray-500 animate-pulse">{loadingText}</span>
+              </div>
+            )}
+            <SiteAnalysisView siteAnalysis={siteAnalysis} />
+          </div>
+        )}
+        {!floorPlan && !blockingLayout && !siteAnalysis && roomPlan && (
+          <div className="relative w-full">
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
+                <span className="text-gray-500 animate-pulse">{loadingText}</span>
+              </div>
+            )}
+            <RoomPlanView roomPlan={roomPlan} />
           </div>
         )}
       </div>
 
-      {hasContent && (
+      {floorPlan && (
         <div className="flex items-center gap-2 p-3 border-t border-gray-200 bg-white">
           <button
             onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}

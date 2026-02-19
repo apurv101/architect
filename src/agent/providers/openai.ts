@@ -49,6 +49,7 @@ export const openaiAdapter: ProviderAdapter = {
     }
 
     let finalText = "";
+    let roundsExhausted = false;
 
     for (let round = 0; round < maxToolRounds; round++) {
       const response = await client.chat.completions.create({
@@ -100,8 +101,12 @@ export const openaiAdapter: ProviderAdapter = {
           content: result.content,
         });
       }
+
+      if (round === maxToolRounds - 1) {
+        roundsExhausted = true;
+      }
     }
 
-    return { text: finalText || "I've completed the request." };
+    return { text: finalText || "I've completed the request.", roundsExhausted };
   },
 };

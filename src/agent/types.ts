@@ -1,16 +1,15 @@
-import type { FloorPlan, CostEstimate, ElevationView, StylePalette } from "../lib/types";
+import type { FloorPlan, RoomPlan, SiteAnalysis, BlockingLayout } from "../lib/types";
 import type { ProviderId } from "./providers/types";
 
 /**
  * An artifact produced by a tool execution.
  * The `kind` discriminator lets the UI know what to render.
- * Add new variants here as new skills are created.
  */
 export type Artifact =
   | { kind: "floor_plan"; data: FloorPlan }
-  | { kind: "cost_estimate"; data: CostEstimate }
-  | { kind: "elevation_view"; data: ElevationView }
-  | { kind: "style_palette"; data: StylePalette };
+  | { kind: "room_plan"; data: RoomPlan }
+  | { kind: "site_analysis"; data: SiteAnalysis }
+  | { kind: "blocking_layout"; data: BlockingLayout };
 
 /** What a tool handler returns after execution. */
 export interface ToolHandlerResult {
@@ -22,8 +21,18 @@ export interface ToolHandlerResult {
   isError?: boolean;
 }
 
+/** Context passed to tool handlers for access to agent state. */
+export interface ToolHandlerContext {
+  apiKey: string;
+  provider: ProviderId;
+  userMessage: string;
+}
+
 /** A tool handler function. */
-export type ToolHandler = (input: unknown) => Promise<ToolHandlerResult>;
+export type ToolHandler = (
+  input: unknown,
+  context?: ToolHandlerContext
+) => Promise<ToolHandlerResult>;
 
 /** What the agent returns to the caller after the agentic loop completes. */
 export interface AgentResult {
