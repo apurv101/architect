@@ -69,13 +69,7 @@ export default function ChatPanel({ messages, loading, onSend, disabled }: Props
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-500 px-4 py-2.5 rounded-2xl rounded-bl-md text-sm animate-pulse">
-              Designing...
-            </div>
-          </div>
-        )}
+        {/* Streaming progress is shown directly in the assistant message */}
         <div ref={bottomRef} />
       </div>
 

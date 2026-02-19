@@ -22,7 +22,7 @@ export const geminiAdapter: ProviderAdapter = {
       tools: [{ functionDeclarations }],
     });
 
-    const maxToolRounds = config.maxToolRounds ?? 10;
+    const maxToolRounds = config.maxToolRounds ?? 50;
     const messages = config.messages as Content[];
 
     if (config.images && config.images.length > 0) {
@@ -54,7 +54,10 @@ export const geminiAdapter: ProviderAdapter = {
       });
 
       for (const part of parts) {
-        if (part.text) finalText += part.text;
+        if (part.text) {
+          finalText += part.text;
+          config.onProgress?.({ type: "text", text: part.text });
+        }
       }
 
       const functionCalls = parts.filter(
@@ -63,15 +66,28 @@ export const geminiAdapter: ProviderAdapter = {
         } => !!p.functionCall
       );
 
+      // If the model returned no function calls, check if it was cut off.
+      // Gemini's finishReason "MAX_TOKENS" means truncation.
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (functionCalls.length === 0 && finishReason === "MAX_TOKENS") {
+        messages.push({
+          role: "user",
+          parts: [{ text: "You were cut off. Continue from where you left off. Remember: you MUST use tools to modify floor plans." }],
+        });
+        continue;
+      }
+
       if (functionCalls.length === 0) break;
 
       const responseParts: Part[] = [];
 
       for (const fc of functionCalls) {
+        config.onProgress?.({ type: "tool_start", toolName: fc.functionCall.name });
         const toolResult = await config.toolHandler(
           fc.functionCall.name,
           fc.functionCall.args
         );
+        config.onProgress?.({ type: "tool_end", toolName: fc.functionCall.name, success: !toolResult.isError });
 
         responseParts.push({
           functionResponse: {

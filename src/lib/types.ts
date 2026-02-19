@@ -89,36 +89,7 @@ export interface RoomPlan {
   notes: string;
 }
 
-// ---- Site Analysis types (analyze_site tool output) ----
-
-export interface SiteConstraints {
-  setbacks?: { top?: number; bottom?: number; left?: number; right?: number };
-  orientation?: "north_top" | "north_bottom" | "north_left" | "north_right";
-  preferredWindows?: ("top" | "bottom" | "left" | "right")[];
-}
-
-export interface ZoneAllocation {
-  zone: ZoneType;
-  region: {
-    edge: "top" | "bottom" | "left" | "right" | "center";
-    approximateShare: number;
-  };
-  rooms: string[];
-}
-
-export interface SiteAnalysis {
-  plot: Plot;
-  rooms: PlannedRoom[];
-  adjacencies: AdjacencyRequirement[];
-  entryRoomId: string;
-  entryEdge: "top" | "bottom" | "left" | "right";
-  siteConstraints: SiteConstraints;
-  zones: ZoneAllocation[];
-  circulationStrategy: string;
-  notes: string;
-}
-
-// ---- Blocking Layout types (place_rooms tool output) ----
+// ---- Blocking Layout types (placed rooms output) ----
 
 export interface BlockingLayout {
   plot: Plot;
@@ -133,10 +104,16 @@ export interface ImageAttachment {
   mediaType: "image/png" | "image/jpeg" | "image/webp" | "image/gif";
 }
 
+export interface ThinkingStep {
+  toolName: string;
+  status: "running" | "done" | "error";
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   images?: ImageAttachment[];
   artifacts?: import("../agent/types").Artifact[];
+  thinkingSteps?: ThinkingStep[];
 }

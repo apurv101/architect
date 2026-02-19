@@ -1,4 +1,4 @@
-import type { FloorPlan, RoomPlan, SiteAnalysis, BlockingLayout } from "../lib/types";
+import type { FloorPlan, RoomPlan, BlockingLayout } from "../lib/types";
 import type { ProviderId } from "./providers/types";
 
 /**
@@ -8,7 +8,6 @@ import type { ProviderId } from "./providers/types";
 export type Artifact =
   | { kind: "floor_plan"; data: FloorPlan }
   | { kind: "room_plan"; data: RoomPlan }
-  | { kind: "site_analysis"; data: SiteAnalysis }
   | { kind: "blocking_layout"; data: BlockingLayout };
 
 /** What a tool handler returns after execution. */
@@ -44,12 +43,23 @@ export interface AgentResult {
   messages: unknown[];
 }
 
+/** Progress events emitted during the agent loop for streaming UI updates. */
+export type ProgressEvent =
+  | { type: "text"; text: string }
+  | { type: "tool_start"; toolName: string }
+  | { type: "tool_end"; toolName: string; success: boolean };
+
+/** Callback for receiving progress events during the agent loop. */
+export type OnProgress = (event: ProgressEvent) => void;
+
 /** Configuration for an agent run. */
 export interface AgentConfig {
   apiKey: string;
   provider: ProviderId;
   model?: string;
   maxTokens?: number;
-  /** Safety cap on tool dispatch rounds (default 10) */
+  /** Safety cap on tool dispatch rounds (default 20) */
   maxToolRounds?: number;
+  /** Callback for streaming progress events to the UI */
+  onProgress?: OnProgress;
 }

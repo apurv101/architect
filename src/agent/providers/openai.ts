@@ -22,8 +22,8 @@ export const openaiAdapter: ProviderAdapter = {
     });
 
     const model = config.model ?? "gpt-4o";
-    const maxTokens = config.maxTokens ?? 8192;
-    const maxToolRounds = config.maxToolRounds ?? 10;
+    const maxTokens = config.maxTokens ?? 16384;
+    const maxToolRounds = config.maxToolRounds ?? 50;
     const tools = toOpenAITools(config.tools);
     const messages =
       config.messages as OpenAI.ChatCompletionMessageParam[];
@@ -66,6 +66,17 @@ export const openaiAdapter: ProviderAdapter = {
 
       if (assistantMsg.content) {
         finalText += assistantMsg.content;
+        config.onProgress?.({ type: "text", text: assistantMsg.content });
+      }
+
+      // If the model hit the token limit, it may have been cut off mid-tool-call.
+      // Ask it to continue so it can complete the tool call.
+      if (choice.finish_reason === "length") {
+        messages.push({
+          role: "user",
+          content: "You were cut off. Continue from where you left off. Remember: you MUST use tools to modify floor plans.",
+        });
+        continue;
       }
 
       if (
@@ -90,10 +101,12 @@ export const openaiAdapter: ProviderAdapter = {
           continue;
         }
 
+        config.onProgress?.({ type: "tool_start", toolName: toolCall.function.name });
         const result = await config.toolHandler(
           toolCall.function.name,
           args
         );
+        config.onProgress?.({ type: "tool_end", toolName: toolCall.function.name, success: !result.isError });
 
         messages.push({
           role: "tool",

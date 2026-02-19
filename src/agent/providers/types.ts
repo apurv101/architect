@@ -24,6 +24,7 @@ export interface ProviderAdapter {
     userMessage: string;
     images?: import("../../lib/types").ImageAttachment[];
     toolHandler: ToolDispatcher;
+    onProgress?: import("../types").OnProgress;
   }): Promise<{ text: string; roundsExhausted?: boolean }>;
 }
 

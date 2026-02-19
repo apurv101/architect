@@ -17,8 +17,8 @@ export const anthropicAdapter: ProviderAdapter = {
     });
 
     const model = config.model ?? "claude-sonnet-4-20250514";
-    const maxTokens = config.maxTokens ?? 8192;
-    const maxToolRounds = config.maxToolRounds ?? 10;
+    const maxTokens = config.maxTokens ?? 16384;
+    const maxToolRounds = config.maxToolRounds ?? 50;
     const tools = toAnthropicTools(config.tools);
     const messages = config.messages as Anthropic.MessageParam[];
 
@@ -56,7 +56,20 @@ export const anthropicAdapter: ProviderAdapter = {
       messages.push({ role: "assistant", content: response.content });
 
       for (const block of response.content) {
-        if (block.type === "text") finalText += block.text;
+        if (block.type === "text") {
+          finalText += block.text;
+          config.onProgress?.({ type: "text", text: block.text });
+        }
+      }
+
+      // If the model hit the token limit, it may have been cut off mid-tool-call.
+      // Ask it to continue so it can complete the tool call.
+      if (response.stop_reason === "max_tokens") {
+        messages.push({
+          role: "user",
+          content: "You were cut off. Continue from where you left off. Remember: you MUST use tools to modify floor plans.",
+        });
+        continue;
       }
 
       if (response.stop_reason !== "tool_use") break;
@@ -66,7 +79,9 @@ export const anthropicAdapter: ProviderAdapter = {
       for (const block of response.content) {
         if (block.type !== "tool_use") continue;
 
+        config.onProgress?.({ type: "tool_start", toolName: block.name });
         const result = await config.toolHandler(block.name, block.input);
+        config.onProgress?.({ type: "tool_end", toolName: block.name, success: !result.isError });
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,

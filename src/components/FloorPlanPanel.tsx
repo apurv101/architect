@@ -1,19 +1,13 @@
-import type { FloorPlan, RoomPlan, SiteAnalysis, BlockingLayout } from "../lib/types";
+import type { FloorPlan } from "../lib/types";
 import FloorPlanSVG from "./FloorPlanSVG";
-import RoomPlanView from "./RoomPlanView";
-import SiteAnalysisView from "./SiteAnalysisView";
-import BlockingLayoutView from "./BlockingLayoutView";
 import { useState } from "react";
 
 interface Props {
   floorPlan: FloorPlan | null;
-  roomPlan: RoomPlan | null;
-  siteAnalysis: SiteAnalysis | null;
-  blockingLayout: BlockingLayout | null;
   loading: boolean;
 }
 
-export default function FloorPlanPanel({ floorPlan, roomPlan, siteAnalysis, blockingLayout, loading }: Props) {
+export default function FloorPlanPanel({ floorPlan, loading }: Props) {
   const [zoom, setZoom] = useState(1);
 
   const handleDownload = () => {
@@ -29,66 +23,27 @@ export default function FloorPlanPanel({ floorPlan, roomPlan, siteAnalysis, bloc
     URL.revokeObjectURL(url);
   };
 
-  const hasContent = floorPlan || blockingLayout || siteAnalysis || roomPlan;
-
-  // Determine loading text based on current stage
-  const loadingText = floorPlan ? "Updating..." :
-    blockingLayout ? "Adding doors & windows..." :
-    siteAnalysis ? "Placing rooms..." :
-    roomPlan ? "Analyzing site..." :
-    "Generating floor plan...";
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto flex items-center justify-center bg-gray-50 p-4">
-        {loading && !hasContent && (
-          <div className="text-gray-400 animate-pulse text-lg">Generating floor plan...</div>
-        )}
-        {!loading && !hasContent && (
+        {!floorPlan && !loading && (
           <div className="text-gray-400 text-center px-8">
             <div className="text-5xl mb-4">🏠</div>
             <p className="text-lg font-medium">No floor plan yet</p>
             <p className="text-sm mt-1">Describe a floor plan in the chat to get started</p>
           </div>
         )}
+        {!floorPlan && loading && (
+          <div className="text-gray-400 animate-pulse text-lg">Generating floor plan...</div>
+        )}
         {floorPlan && (
           <div className="relative">
             {loading && (
               <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
-                <span className="text-gray-500 animate-pulse">{loadingText}</span>
+                <span className="text-gray-500 animate-pulse">Updating...</span>
               </div>
             )}
             <FloorPlanSVG floorPlan={floorPlan} zoom={zoom} />
-          </div>
-        )}
-        {!floorPlan && blockingLayout && (
-          <div className="relative w-full flex items-center justify-center">
-            {loading && (
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
-                <span className="text-gray-500 animate-pulse">{loadingText}</span>
-              </div>
-            )}
-            <BlockingLayoutView blockingLayout={blockingLayout} />
-          </div>
-        )}
-        {!floorPlan && !blockingLayout && siteAnalysis && (
-          <div className="relative w-full">
-            {loading && (
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
-                <span className="text-gray-500 animate-pulse">{loadingText}</span>
-              </div>
-            )}
-            <SiteAnalysisView siteAnalysis={siteAnalysis} />
-          </div>
-        )}
-        {!floorPlan && !blockingLayout && !siteAnalysis && roomPlan && (
-          <div className="relative w-full">
-            {loading && (
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded">
-                <span className="text-gray-500 animate-pulse">{loadingText}</span>
-              </div>
-            )}
-            <RoomPlanView roomPlan={roomPlan} />
           </div>
         )}
       </div>
